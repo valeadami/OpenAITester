@@ -1,8 +1,15 @@
 # OpenAI's models Tester
 
-## Prerequisite:
+This file presents an evaluation of GPT-3.5 Turbo's reasoning abilities using a dataset of academic prompts published in the latter half of 2023.
+
+The evaluation focuses on analyzing the model's responses to various reasoning tasks using different prompting techniques, such as zero-shot-CoT, Prompt and plan, Analogical Prompting, and Emotion Prompt.
+
+The results provide insights into the model's strengths and weaknesses in reasoning.
+
+## Prerequisites:
 
 - OpenAI API Key
+- a Google account 
 
 ## Targeted at:
 
@@ -11,10 +18,12 @@
 
 ## Instructions:
 
-This file presents a comprehensive evaluation of GPT-3.5 Turbo's reasoning abilities using a dataset of academic prompts published in the latter half of 2023.
+Download the openai-tester-appscript.xlsx file and import it in your drive. Open the file and follow the instructions:
 
-The evaluation focuses on analyzing the model's responses to various reasoning tasks using different prompting techniques, such as zero-shot-CoT, Prompt and plan, Analogical Prompting, and Emotion Prompt.
 
-The results provide insights into the model's strengths and weaknesses in reasoning.
+- In Tester sheet, insert your OpenAI's api key in cell A2
+- Select the menu Evaluator->Generate test
+- After two test runs, go to Analysis sheet, select Evaluator->Calculate similarity
 
-In the Tester sheet, cell A2, insert your API KEY. From the Evaluator menu, select Generate Test.
+  
+
