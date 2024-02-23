@@ -158,7 +158,7 @@ function calculateSentenceSimilarity(){
 
   var name=sheet.getName();
   if (name != "Analisys"){
-   sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Analisys');
+   sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Analysis');
    SpreadsheetApp.setActiveSheet(sheet);
   }
   
