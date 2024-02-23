@@ -1,0 +1,258 @@
+/* 
+Script to evaluate the performance of OpenAI's models, i.e. gpt3.5-turbo or any chat model 
+*/
+
+var payload={};
+var options={};
+const urlChatModels='https://api.openai.com/v1/chat/completions';
+var conteggio=0; //counting tokens consumed
+
+/*  create the menu and submenu in Tester sheet*/
+function onOpen(){
+var ui = SpreadsheetApp.getUi();
+ui.createMenu('Evaluator')
+.addItem('Generate test', 'createCompletions')
+.addItem('Calculate Similarity', 'calculateSentenceSimilarity')
+/*.addItem('Clear Prompt and Output', 'cancellaPromptOutput')*/
+.addToUi();
+}
+
+/*
+
+  --------Clear all contents in any sheets---------
+  -------------------------------------------------
+
+function cancellaPromptOutput(){
+
+ 
+var sheet = SpreadsheetApp.getActiveSheet();
+
+var range = sheet.getRange("B2:C1000");
+range.clearContent();
+
+
+}*/
+/*
+ Format date and tite for column title, gg-mm-yyyy hh:mm -> 14/02/2024 15:23
+ */
+function getFormattedDateTime(){
+  let currentDate= new Date(); 
+  var day = ("0" + currentDate.getDate()).slice(-2);
+  var month = ("0" + (currentDate.getMonth() + 1)).slice(-2);
+  var year = currentDate.getFullYear();
+  var hours = ("0" + currentDate.getHours()).slice(-2);
+  var minutes = ("0" + currentDate.getMinutes()).slice(-2);
+  
+  let formattedDateTime = day + "/" + month + "/" + year + " " + hours + ":" + minutes;
+  return formattedDateTime;
+}
+
+
+/*
+Tester Sheet
+Send HTTP post request to chat model endpoint for each rows in range B2:bX.
+
+
+Input: promt from column B
+Output: response in the first available column, inserting date and time + model's name as header colum, and then model's output for each call.
+*/
+
+
+function createCompletions() {
+
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var name=sheet.getName();
+  if (name != "Tester"){
+   sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tester');
+   SpreadsheetApp.setActiveSheet(sheet);
+  }
+
+  
+
+  /* retrieve  API KEY value from cell A2 */
+  var apiKey = sheet.getRange(2,1).getValue();
+
+
+  payload ={
+            "model": "gpt-3.5-turbo", // gpt-3.5-turbo you can change model here 
+             "messages": [{ role: "user", content: '' }],
+            "temperature": 0.0,
+            "max_tokens": 1024, // beware of  token limits TPM
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+   };
+   
+
+ options = {
+      'method' : 'post',
+      'contentType': 'application/json',
+      'payload' : JSON.stringify(payload),
+      'muteHttpExceptions': true,
+      'headers': {
+        Authorization: 'Bearer ' + apiKey,
+      },
+     
+  };
+
+ 
+ /** which column is next? */
+var lastColumn = sheet.getLastColumn();
+Logger.log(lastColumn);
+
+
+sheet.getRange(1, lastColumn +1, 1, 1).setValue(getFormattedDateTime() +' '+ payload.model.toString());
+  /**
+   * 
+   * cycling on column B -> PROMPT
+   */
+
+    var range = sheet.getRange("B2:B" + sheet.getLastRow());
+    var data = range.getValues();
+  
+   
+    for (var i = 0; i <data.length; i++) {
+      var cellValue = data[i]; 
+      if (cellValue === "") {
+          Browser.msgBox('Please insert your prompt!');
+          Logger.log('empty value');
+          break;
+      }
+      Logger.log('Prompt= '+cellValue);
+    payload.messages[0].content=cellValue.toString();
+    options.payload=JSON.stringify(payload);
+    Logger.log( options.payload);
+  
+  // INVOKE endpoint
+     try {
+       response = UrlFetchApp.fetch(urlChatModels, options);
+
+       //get result
+       var result = JSON.parse(response.getContentText())['choices'][0]['message']['content'];
+       Logger.log(result);
+       
+       if (result) {
+          var uso = JSON.parse(response.getContentText())['usage']['total_tokens'];
+    
+        conteggio += uso;
+        Logger.log('TOKENS= ' + conteggio);
+
+         sheet.getRange(i + 2, lastColumn + 1, 1, 1).setValue(result);
+       } else {
+        
+         sheet.getRange(i + 2, lastColumn + 1, 1, 1).setValue('Ops, something went wrong!');
+       }
+     } catch (err) {
+       Logger.log(err.message);
+     } 
+   
+  }
+
+
+}
+/* */
+function calculateSentenceSimilarity(){
+
+
+  var sheet = SpreadsheetApp.getActiveSheet();
+
+  var name=sheet.getName();
+  if (name != "Analisys"){
+   sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Analisys');
+   SpreadsheetApp.setActiveSheet(sheet);
+  }
+  
+  /* retrieve  API KEY value from cell A2 */
+  var apiKey =  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tester').getRange(2,1).getValue();
+ Logger.log(apiKey);
+
+  payload ={
+            "model": "gpt-4-0125-preview", // use a different model as evaluator
+             "messages": [{ role: "user", content: '' }],
+            "temperature": 0.0,
+            "max_tokens": 1, // returns a number between 1-100
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+   };
+   
+
+ options = {
+      'method' : 'post',
+      'contentType': 'application/json',
+      'payload' : JSON.stringify(payload),
+      'muteHttpExceptions': true,
+      'headers': {
+        Authorization: 'Bearer ' + apiKey,
+      },
+     
+  };
+//Logger.log(options);
+  
+ 
+
+var lastColumn = sheet.getLastColumn();
+
+/*  set column header */
+sheet.getRange(1, lastColumn +1, 1, 1).setValue('Similarity score between column B & D');
+
+var prompt="Calculate the sentence similary between the following sentences using the cosine similarity algorithm. YOU MUST RETURN as Output ONLY A NUMERIC VALUE, between 1 and 100 according to the sentence similary.\n" +
+"Sentence 1: {sentence1}\n "+
+"Sentence 2: {sentence2}\n "+
+"Output:";
+  /**
+   * 
+   * cycling on column B and D 
+   */
+
+    var range = sheet.getRange("B2:B" + sheet.getLastRow());
+    var range2 = sheet.getRange("D2:D" + sheet.getLastRow());
+    var data = range.getValues();
+    var data2=range2.getValues();
+   
+    for (var i = 0; i <data.length; i++) {
+      var cellValue = data[i].toString(); 
+      var cellValue2= data2[i].toString();
+      if  ((cellValue === "") || (cellValue2 === "")) { 
+          Browser.msgBox('Empty cell',Browser.Buttons.OK_CANCEL);
+          Logger.log('Empty cell');
+          break;
+      }
+      Logger.log('Sentence 1= '+cellValue +', Sentence 2='+cellValue2);
+
+    //replace sentence1 and sentence2 with cellValue and cellValue2 values
+    var prompt_finale=prompt.replace(" {sentence1}",cellValue.toString() );
+    Logger.log(prompt_finale);
+    prompt_finale=prompt_finale.replace(" {sentence2}",cellValue2.toString() );
+    Logger.log(prompt_finale);
+    payload.messages[0].content=prompt_finale;
+    options.payload=JSON.stringify(payload);
+    Logger.log( options.payload);
+  
+  // INVOKE endpoint
+     try {
+       response = UrlFetchApp.fetch(urlChatModels, options);
+
+       //get result
+       var result = JSON.parse(response.getContentText())['choices'][0]['message']['content'];
+       Logger.log(result);
+       
+       if (result) {
+          var uso = JSON.parse(response.getContentText())['usage']['total_tokens'];
+        
+        conteggio += uso;
+        Logger.log('TOKENS COUNT = ' + conteggio);
+
+         sheet.getRange(i + 2, lastColumn + 1, 1, 1).setValue(result);
+       } else {
+         
+         sheet.getRange(i + 2, lastColumn + 1, 1, 1).setValue('something went wrong');
+       }
+     } catch (err) {
+       Logger.log(err.message);
+       Browser.msgBox('Oops...An error happened! Try again later!',Browser.Buttons.OK);
+     } 
+   
+  }
+
+}
