@@ -18,8 +18,9 @@ The results provide insights into the model's strengths and weaknesses in reason
 
 ## Instructions:
 
-Download the openai-tester-appscript.xlsx file and import it in your drive. Open the file and follow the instructions:
+Follow the instructions to recreate your own file [here] (https://promptmagic.wordpress.com/2024/02/23/leveraging-appscript-to-assess-gpt-3-5-turbos-performance/)
 
+In short:
 
 - In Tester sheet, insert your OpenAI's api key in cell A2
 - Select the menu Evaluator->Generate test
