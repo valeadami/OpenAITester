@@ -18,7 +18,7 @@ The results provide insights into the model's strengths and weaknesses in reason
 
 ## Instructions:
 
-Follow the instructions to recreate your own file [here] (https://promptmagic.wordpress.com/2024/02/23/leveraging-appscript-to-assess-gpt-3-5-turbos-performance/)
+Follow the instructions to recreate your own file [here](https://promptmagic.wordpress.com/2024/02/23/leveraging-appscript-to-assess-gpt-3-5-turbos-performance/).
 
 In short:
 
